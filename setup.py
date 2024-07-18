@@ -2,7 +2,7 @@ from setuptools import find_packages, setup
 import os
 from glob import glob
 
-package_name = 'trajectory_following_ros2'
+package_name = 'ros_images_to_files'
 
 data_files = [
     ('share/ament_index/resource_index/packages', ['resource/' + package_name]),
