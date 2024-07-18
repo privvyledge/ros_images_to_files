@@ -28,9 +28,8 @@ class VideoRecorderNode(Node):
     def __init__(self):
         """Constructor for ViderRecorderNode"""
         super(VideoRecorderNode, self).__init__('image_to_video_recorder')
-        # todo: declare first
 
-        # declare parameters with defaults. todo: add flag to display the video
+        # declare parameters with defaults.
         self.declare_parameter(name='image_topic', value="image", descriptor=ParameterDescriptor(
                                        description='',
                                        type=ParameterType.PARAMETER_STRING))
@@ -134,7 +133,9 @@ class VideoRecorderNode(Node):
 
             # normalize depth to fall between 0 (black) and 1 (white) to write with video writer
             if self.normalize_depth:
-                cv_image = cv2.normalize(cv_image, cv_image, 0, 1, cv2.NORM_MINMAX)
+                # note, if the depth is a single file and Opencv<4.7.0, then it has been normalized
+                # We need to restore
+                cv_image = cv2.normalize(cv_image, cv_image, 0, 1, cv2.NORM_MINMAX, dtype=cv2.CV_8UC1)
 
             # save the images to a video
             if not is_depth or self.normalize_depth:
