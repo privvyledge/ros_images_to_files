@@ -22,6 +22,27 @@ except Exception:
     pass
 
 
+def normalize_depth_image(depth_image, max_val=255, dtype=None):
+    """
+
+    :param depth_image:
+    :param max_val: Either 1 or 255
+    :param dtype: Either cv2.CV_32F or cv2.CV_8UC1
+    :return:
+    """
+    if dtype is None:
+        dtype = cv2.CV_8UC1
+        if max_val == 1:
+            dtype = cv2.CV_32F
+
+    # note, if the depth is a single file and Opencv<4.7.0, then it has been normalized
+    # We need to restore. CV_32F for 0-1 or CV_8UC1 for 0-255
+    depth_image_normalized = cv2.normalize(depth_image, depth_image, 0, max_val, cv2.NORM_MINMAX,
+                             dtype=dtype)  # 1 or 255 depends on datatype, 1 for float, e.g 32F and 255 for int eg 8U
+
+    return depth_image_normalized
+
+
 class VideoRecorderNode(Node):
     """docstring for ClassName"""
     
@@ -48,9 +69,12 @@ class VideoRecorderNode(Node):
         self.declare_parameter(name='qos', value="SENSOR_DATA", descriptor=ParameterDescriptor(
                                        description='',
                                        type=ParameterType.PARAMETER_STRING))
-        self.declare_parameter(name='normalize_depth', value=False, descriptor=ParameterDescriptor(
+        self.declare_parameter(name='normalize_depth', value=True, descriptor=ParameterDescriptor(
                 description='',
                 type=ParameterType.PARAMETER_BOOL))
+        self.declare_parameter(name='normalized_max', value=255, descriptor=ParameterDescriptor(
+                description='',
+                type=ParameterType.PARAMETER_DOUBLE))
         self.declare_parameter(name='show_image', value=False, descriptor=ParameterDescriptor(
                                        description='',
                                        type=ParameterType.PARAMETER_BOOL))
@@ -65,6 +89,7 @@ class VideoRecorderNode(Node):
         self.fps = self.get_parameter('fps').get_parameter_value().double_value
         self.qos = self.get_parameter('qos').get_parameter_value().string_value
         self.normalize_depth = self.get_parameter('normalize_depth').get_parameter_value().bool_value
+        self.normalized_max = self.get_parameter('normalized_max').get_parameter_value().double_value
         self.show_image = self.get_parameter('show_image').get_parameter_value().bool_value
 
         # Initialize variables
@@ -126,16 +151,16 @@ class VideoRecorderNode(Node):
                 self.exit(1)
 
             # convert ROS2 image message to OpenCV
-            if self.message_format == "raw":
-                cv_image = self.bridge.imgmsg_to_cv2(msg, desired_encoding=msg_fmt)
-            elif self.message_format in ("compressed", "packet"):
+            if self.message_format in ("compressed", "packet"):
                 cv_image = self.bridge.compressed_imgmsg_to_cv2(msg, msg_fmt)
+            else:
+                cv_image = self.bridge.imgmsg_to_cv2(msg, desired_encoding=msg_fmt)
 
-            # normalize depth to fall between 0 (black) and 1 (white) to write with video writer
-            if self.normalize_depth:
+            # normalize depth to fall between 0 (black) and 1/255 (white) to write with video writer
+            if self.normalize_depth and is_depth:
                 # note, if the depth is a single file and Opencv<4.7.0, then it has been normalized
                 # We need to restore
-                cv_image = cv2.normalize(cv_image, cv_image, 0, 1, cv2.NORM_MINMAX, dtype=cv2.CV_8UC1)
+                cv_image = normalize_depth_image(cv_image, max_val=self.normalized_max, dtype=None)
 
             # save the images to a video
             if not is_depth or self.normalize_depth:
@@ -186,12 +211,12 @@ class VideoRecorderNode(Node):
 
         except Exception as e:
             self.get_logger().error('Error processing image: %s' % str(e))
-            
+
     def destroy_node(self):
         if self.video_writer is not None:
             self.video_writer.release()
             self.get_logger().info('Closing the video writer.')
-        super().destroy_node()
+        super(VideoRecorderNode, self).destroy_node()
 
 
 def main(args=None):
