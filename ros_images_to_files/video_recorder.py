@@ -1,3 +1,8 @@
+'''
+Todo:
+    * switch to image transport for more modularity and better compressed image support use try-catch to handle image transport not being installed (https://github.com/ros-perception/image_transport_tutorials?tab=readme-ov-file#py_simple_image_pub | https://github.com/ros-perception/image_transport_tutorials?tab=readme-ov-file#py_simple_image_pub)
+    * Extend this package as a robust image tool with QoS and image transport (including republishing) support for publishing and subscribing (also add pointcloud support)
+'''
 import os
 import sys
 import getopt

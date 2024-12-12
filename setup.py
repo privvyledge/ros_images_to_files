@@ -52,6 +52,7 @@ setup(
         entry_points={
             'console_scripts': [
                 'video_recorder_node = ros_images_to_files.video_recorder:main',
+                'image_republisher_node = ros_images_to_files.image_republisher:main',
             ],
         },
 )
