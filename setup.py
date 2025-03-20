@@ -7,12 +7,24 @@ package_name = 'ros_images_to_files'
 data_files = [
     ('share/ament_index/resource_index/packages', ['resource/' + package_name]),
     ('share/' + package_name, ['package.xml']),
-    (os.path.join('share', package_name, 'launch'), glob('launch/*.py')),
-    # (os.path.join('share', package_name, 'config'), glob('config/*.yaml')),
-    # (os.path.join('share', package_name, 'rviz'), glob('rviz/*.rviz'))
+    # (os.path.join('share', package_name, 'launch'), glob('launch/*.py')),
+    (os.path.join('share', package_name, 'config'), glob('config/*.yaml')),
+    (os.path.join('share', package_name, 'rviz'), glob('rviz/*.rviz'))
 ]
 
+# to recursively add all launch files and keep the subdirectory structure
+for root, dirs, files in os.walk('launch'):
+    # Get the relative path for each subdirectory
+    install_dir = os.path.join('share', package_name, root)
+    # Get the list of all launch files in the current subdirectory
+    launch_files = [os.path.join(root, f) for f in files if f.endswith(
+            ('.launch.py', '.launch.xml', '.launch.yml', '.launch.yaml'))]
+    if launch_files:
+        # Add each subdirectory and its files to data_files
+        data_files.append((install_dir, launch_files))
 
+
+# to include all directories and subdirectories in a folder
 def package_files(data_files, directory_list):
     paths_dict = {}
 
